@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Light and Dark Mode Variables */
+    :root {
+      --bg-color: #191919;
+      --text-color: #ffffff;
+      --input-bg: #2c2c2e;
+      --input-border: #3a3a3c;
+      --button-bg: #3a3a3c;
+      --button-text: #00c853;
+    }
+
+    body.light-mode {
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --input-bg: #f0f0f0;
+      --input-border: #cccccc;
+      --button-bg: #e0e0e0;
+      --button-text: #00796b;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .container {
+      background-color: transparent;
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 600px;
+      min-width: 250px;
+      position: relative;
+    }
+
+    .theme-switch {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .theme-switch img {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      margin: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .theme-switch img:hover {
+      transform: scale(1.1);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .time-display {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .button {
+      background-color: var(--button-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--button-text);
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .button:hover {
+      background-color: var(--button-text);
+      color: var(--bg-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="theme-switch">
+      <img src="https://icons-for-free.com/iff/png/512/sun-131979013495145260.png" id="light-icon" alt="Light Mode" title="Switch to Light Mode" />
+      <img src="https://static-00.iconduck.com/assets.00/moon-icon-512x512-fm9crgpt.png" id="dark-icon" alt="Dark Mode" title="Switch to Dark Mode" style="display: none;" />
+    </div>
+    <div class="title">Time Tracker</div>
+    <div class="time-display" id="time-display">00:00:00</div>
+    <div class="button-group">
+      <button class="button" id="start-button">Start</button>
+      <button class="button" id="stop-button">Stop</button>
+      <button class="button" id="reset-button">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    const lightIcon = document.getElementById("light-icon");
+    const darkIcon = document.getElementById("dark-icon");
+    const timeDisplay = document.getElementById("time-display");
+    const startButton = document.getElementById("start-button");
+    const stopButton = document.getElementById("stop-button");
+    const resetButton = document.getElementById("reset-button");
+
+    let timerInterval = null;
+    let elapsedTime = 0;
+
+    function updateDisplay() {
+      const hours = Math.floor(elapsedTime / 3600).toString().padStart(2, "0");
+      const minutes = Math.floor((elapsedTime % 3600) / 60).toString().padStart(2, "0");
+      const seconds = (elapsedTime % 60).toString().padStart(2, "0");
+      timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    function saveState() {
+      const state = {
+        theme: document.body.classList.contains("light-mode") ? "light" : "dark",
+        elapsedTime,
+        isRunning: timerInterval !== null
+      };
+      localStorage.setItem("timeTrackerState", JSON.stringify(state));
+    }
+
+    function loadState() {
+      const state = JSON.parse(localStorage.getItem("timeTrackerState"));
+      if (state) {
+        elapsedTime = state.elapsedTime || 0;
+        updateDisplay();
+        if (state.isRunning) {
+          startTimer();
+        }
+        toggleTheme(state.theme === "light");
+      }
+    }
+
+    function startTimer() {
+      if (timerInterval) return;
+      timerInterval = setInterval(() => {
+        elapsedTime++;
+        updateDisplay();
+        saveState();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      saveState();
+    }
+
+    function resetTimer() {
+      stopTimer();
+      elapsedTime = 0;
+      updateDisplay();
+      saveState();
+    }
+
+    function toggleTheme(isLight) {
+      if (isLight) {
+        document.body.classList.add("light-mode");
+        lightIcon.style.display = "none";
+        darkIcon.style.display = "inline";
+      } else {
+        document.body.classList.remove("light-mode");
+        lightIcon.style.display = "inline";
+        darkIcon.style.display = "none";
+      }
+    }
+
+    lightIcon.addEventListener("click", () => { toggleTheme(true); saveState(); });
+    darkIcon.addEventListener("click", () => { toggleTheme(false); saveState(); });
+    startButton.addEventListener("click", startTimer);
+    stopButton.addEventListener("click", stopTimer);
+    resetButton.addEventListener("click", resetTimer);
+
+    window.addEventListener("load", loadState);
+
+    updateDisplay();
+  </script>
+</body>
+</html>
