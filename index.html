@@ -91,20 +91,31 @@
     }
 
     .button {
-      background-color: var(--button-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 6px;
-      color: var(--button-text);
-      padding: 10px 20px;
-      font-size: 16px;
-      font-weight: bold;
+      background-color: transparent;
+      border: none;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: transform 0.3s ease;
+      width: 40px;
+      height: 40px;
+    }
+
+    .button img {
+      width: 100%;
+      height: auto;
+      filter: invert(var(--icon-invert));
+      transition: filter 0.3s ease;
+    }
+
+    body.light-mode .button img {
+      filter: invert(0);
+    }
+
+    body:not(.light-mode) .button img {
+      filter: invert(1);
     }
 
     .button:hover {
-      background-color: var(--button-text);
-      color: var(--bg-color);
+      transform: scale(1.1);
     }
   </style>
 </head>
@@ -117,9 +128,12 @@
     <div class="title">Time Tracker</div>
     <div class="time-display" id="time-display">00:00:00</div>
     <div class="button-group">
-      <button class="button" id="start-button">Start</button>
-      <button class="button" id="stop-button">Stop</button>
-      <button class="button" id="reset-button">Reset</button>
+      <button class="button" id="start-pause-button">
+        <img src="https://brandeps.com/icon-download/P/Play-icon-24.png" id="start-icon" alt="Start">
+      </button>
+      <button class="button" id="reset-button">
+        <img src="https://brandeps.com/icon-download/R/Reset-icon-01.png" alt="Reset">
+      </button>
     </div>
   </div>
 
@@ -127,13 +141,14 @@
     const lightIcon = document.getElementById("light-icon");
     const darkIcon = document.getElementById("dark-icon");
     const timeDisplay = document.getElementById("time-display");
-    const startButton = document.getElementById("start-button");
-    const stopButton = document.getElementById("stop-button");
+    const startPauseButton = document.getElementById("start-pause-button");
+    const startIcon = document.getElementById("start-icon");
     const resetButton = document.getElementById("reset-button");
 
     let timerInterval = null;
     let elapsedTime = 0;
     let lastUpdateTime = null;
+    let isRunning = false;
 
     function updateDisplay() {
       const hours = Math.floor(elapsedTime / 3600).toString().padStart(2, "0");
@@ -146,7 +161,7 @@
       const state = {
         theme: document.body.classList.contains("light-mode") ? "light" : "dark",
         elapsedTime,
-        isRunning: timerInterval !== null,
+        isRunning,
         lastUpdateTime: Date.now()
       };
       localStorage.setItem("timeTrackerState", JSON.stringify(state));
@@ -162,8 +177,9 @@
           const elapsedSinceLastUpdate = Math.floor((now - lastUpdateTime) / 1000);
           elapsedTime += elapsedSinceLastUpdate > 0 ? elapsedSinceLastUpdate : 0;
         }
+        isRunning = state.isRunning;
         updateDisplay();
-        if (state.isRunning) {
+        if (isRunning) {
           startTimer();
         }
         toggleTheme(state.theme === "light");
@@ -192,6 +208,19 @@
       saveState();
     }
 
+    function toggleStartPause() {
+      if (isRunning) {
+        stopTimer();
+        startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
+        startIcon.alt = "Start";
+      } else {
+        startTimer();
+        startIcon.src = "https://brandeps.com/icon-download/P/Pause-icon-17.png";
+        startIcon.alt = "Pause";
+      }
+      isRunning = !isRunning;
+    }
+
     function toggleTheme(isLight) {
       if (isLight) {
         document.body.classList.add("light-mode");
@@ -206,8 +235,7 @@
 
     lightIcon.addEventListener("click", () => { toggleTheme(true); saveState(); });
     darkIcon.addEventListener("click", () => { toggleTheme(false); saveState(); });
-    startButton.addEventListener("click", startTimer);
-    stopButton.addEventListener("click", stopTimer);
+    startPauseButton.addEventListener("click", toggleStartPause);
     resetButton.addEventListener("click", resetTimer);
 
     window.addEventListener("load", loadState);
