@@ -47,7 +47,7 @@
       text-align: center;
       box-sizing: border-box;
       width: 100%;
-      min-height: 100vh;
+      height: 100%;
       position: relative;
     }
 
@@ -87,7 +87,7 @@
     .button-group {
       display: flex;
       justify-content: center;
-      gap: 15px;
+      gap: 10px;
     }
 
     .button {
@@ -95,8 +95,8 @@
       border: none;
       cursor: pointer;
       transition: transform 0.3s ease;
-      width: 40px;
-      height: 40px;
+      width: 30px;
+      height: 30px;
     }
 
     .button img {
@@ -117,6 +117,59 @@
     .button:hover {
       transform: scale(1.1);
     }
+
+    .saved-times {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .saved-times.hidden {
+      display: none;
+    }
+
+    .saved-times h2 {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .saved-times table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .saved-times table td {
+      padding: 5px;
+      border-bottom: 1px solid var(--input-border);
+    }
+
+    .saved-times table td:last-child {
+      text-align: right;
+    }
+
+    .delete-icon {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      filter: invert(var(--icon-invert));
+      transition: filter 0.3s ease;
+    }
+
+    body.light-mode .delete-icon {
+      filter: invert(0);
+    }
+
+    body:not(.light-mode) .delete-icon {
+      filter: invert(1);
+    }
+
+    .name-input, .time-input {
+      display: none;
+    }
+
+    .name-input.editing, .time-input.editing {
+      display: inline;
+    }
   </style>
 </head>
 <body>
@@ -134,6 +187,13 @@
       <button class="button" id="reset-button">
         <img src="https://brandeps.com/icon-download/R/Reset-icon-01.png" alt="Reset">
       </button>
+      <button class="button" id="save-button">
+        <img src="https://brandeps.com/icon-download/S/Save-icon-05.png" alt="Save">
+      </button>
+    </div>
+    <div class="saved-times hidden">
+      <h2>Saved Times</h2>
+      <table id="saved-times-table"></table>
     </div>
   </div>
 
@@ -144,11 +204,15 @@
     const startPauseButton = document.getElementById("start-pause-button");
     const startIcon = document.getElementById("start-icon");
     const resetButton = document.getElementById("reset-button");
+    const saveButton = document.getElementById("save-button");
+    const savedTimesContainer = document.querySelector(".saved-times");
+    const savedTimesTable = document.getElementById("saved-times-table");
 
     let timerInterval = null;
     let elapsedTime = 0;
     let lastUpdateTime = null;
     let isRunning = false;
+    let savedTimes = [];
 
     function updateDisplay() {
       const hours = Math.floor(elapsedTime / 3600).toString().padStart(2, "0");
@@ -162,7 +226,8 @@
         theme: document.body.classList.contains("light-mode") ? "light" : "dark",
         elapsedTime,
         isRunning,
-        lastUpdateTime: Date.now()
+        lastUpdateTime: Date.now(),
+        savedTimes
       };
       localStorage.setItem("timeTrackerState", JSON.stringify(state));
     }
@@ -173,12 +238,14 @@
         const now = Date.now();
         elapsedTime = state.elapsedTime || 0;
         lastUpdateTime = state.lastUpdateTime || now;
+        savedTimes = state.savedTimes || [];
         if (state.isRunning) {
           const elapsedSinceLastUpdate = Math.floor((now - lastUpdateTime) / 1000);
           elapsedTime += elapsedSinceLastUpdate > 0 ? elapsedSinceLastUpdate : 0;
         }
         isRunning = state.isRunning;
         updateDisplay();
+        renderSavedTimes();
         if (isRunning) {
           startTimer();
         }
@@ -221,6 +288,86 @@
       isRunning = !isRunning;
     }
 
+    function saveCurrentTime() {
+      const currentTime = timeDisplay.textContent;
+      const newEntry = { name: "New Entry", time: currentTime, editing: false };
+      savedTimes.push(newEntry);
+      renderSavedTimes();
+      resetTimer();
+      saveState();
+    }
+
+    function renderSavedTimes() {
+      savedTimesTable.innerHTML = "";
+      if (savedTimes.length === 0) {
+        savedTimesContainer.classList.add("hidden");
+        return;
+      }
+      savedTimesContainer.classList.remove("hidden");
+      savedTimes.forEach((entry, index) => {
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = entry.name;
+        nameSpan.addEventListener("click", () => {
+          nameInput.classList.add("editing");
+          nameSpan.style.display = "none";
+        });
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.value = entry.name;
+        nameInput.className = "name-input";
+        nameInput.addEventListener("blur", () => {
+          entry.name = nameInput.value;
+          nameInput.classList.remove("editing");
+          nameSpan.textContent = nameInput.value;
+          nameSpan.style.display = "inline";
+          saveState();
+        });
+        nameCell.appendChild(nameSpan);
+        nameCell.appendChild(nameInput);
+
+        const timeCell = document.createElement("td");
+        const timeSpan = document.createElement("span");
+        timeSpan.textContent = entry.time;
+        timeSpan.addEventListener("click", () => {
+          timeInput.classList.add("editing");
+          timeSpan.style.display = "none";
+        });
+        const timeInput = document.createElement("input");
+        timeInput.type = "text";
+        timeInput.value = entry.time;
+        timeInput.className = "time-input";
+        timeInput.addEventListener("blur", () => {
+          entry.time = timeInput.value;
+          timeInput.classList.remove("editing");
+          timeSpan.textContent = timeInput.value;
+          timeSpan.style.display = "inline";
+          saveState();
+        });
+        timeCell.appendChild(timeSpan);
+        timeCell.appendChild(timeInput);
+
+        const deleteCell = document.createElement("td");
+        const deleteIcon = document.createElement("img");
+        deleteIcon.src = "https://www.pngplay.com/wp-content/uploads/7/Delete-Transparent-Background.png";
+        deleteIcon.alt = "Delete";
+        deleteIcon.className = "delete-icon";
+        deleteIcon.addEventListener("click", () => {
+          savedTimes.splice(index, 1);
+          renderSavedTimes();
+          saveState();
+        });
+        deleteCell.appendChild(deleteIcon);
+
+        row.appendChild(nameCell);
+        row.appendChild(timeCell);
+        row.appendChild(deleteCell);
+        savedTimesTable.appendChild(row);
+      });
+    }
+
     function toggleTheme(isLight) {
       if (isLight) {
         document.body.classList.add("light-mode");
@@ -237,6 +384,7 @@
     darkIcon.addEventListener("click", () => { toggleTheme(false); saveState(); });
     startPauseButton.addEventListener("click", toggleStartPause);
     resetButton.addEventListener("click", resetTimer);
+    saveButton.addEventListener("click", saveCurrentTime);
 
     window.addEventListener("load", loadState);
 
