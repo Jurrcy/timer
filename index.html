@@ -239,16 +239,21 @@
         elapsedTime = state.elapsedTime || 0;
         lastUpdateTime = state.lastUpdateTime || now;
         savedTimes = state.savedTimes || [];
-        if (state.isRunning) {
+        isRunning = state.isRunning;
+
+        if (isRunning) {
           const elapsedSinceLastUpdate = Math.floor((now - lastUpdateTime) / 1000);
           elapsedTime += elapsedSinceLastUpdate > 0 ? elapsedSinceLastUpdate : 0;
+          startIcon.src = "https://brandeps.com/icon-download/P/Pause-icon-17.png";
+          startIcon.alt = "Pause";
+          startTimer();
+        } else {
+          startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
+          startIcon.alt = "Start";
         }
-        isRunning = state.isRunning;
+
         updateDisplay();
         renderSavedTimes();
-        if (isRunning) {
-          startTimer();
-        }
         toggleTheme(state.theme === "light");
       }
     }
@@ -272,6 +277,9 @@
       stopTimer();
       elapsedTime = 0;
       updateDisplay();
+      isRunning = false;
+      startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
+      startIcon.alt = "Start";
       saveState();
     }
 
