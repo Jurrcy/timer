@@ -210,7 +210,7 @@
 
     let timerInterval = null;
     let elapsedTime = 0;
-    let lastUpdateTime = null;
+    let startTime = null;  // When the timer was started
     let isRunning = false;
     let savedTimes = [];
 
@@ -226,7 +226,7 @@
         theme: document.body.classList.contains("light-mode") ? "light" : "dark",
         elapsedTime,
         isRunning,
-        lastUpdateTime: Date.now(),
+        startTime,  // Save the start time
         savedTimes
       };
       localStorage.setItem("timeTrackerState", JSON.stringify(state));
@@ -236,17 +236,20 @@
       const state = JSON.parse(localStorage.getItem("timeTrackerState"));
       if (state) {
         const now = Date.now();
+        
+        // Restore saved state
         elapsedTime = state.elapsedTime || 0;
-        lastUpdateTime = state.lastUpdateTime || now;
-        savedTimes = state.savedTimes || [];
         isRunning = state.isRunning;
+        savedTimes = state.savedTimes || [];
+        startTime = state.startTime;
 
-        if (isRunning) {
-          const elapsedSinceLastUpdate = Math.floor((now - lastUpdateTime) / 1000);
-          elapsedTime += elapsedSinceLastUpdate > 0 ? elapsedSinceLastUpdate : 0;
+        // If timer was running, calculate elapsed time since page was closed
+        if (isRunning && startTime) {
+          const timeSinceStart = Math.floor((now - startTime) / 1000);
+          elapsedTime = timeSinceStart;
+          startTimer();
           startIcon.src = "https://brandeps.com/icon-download/P/Pause-icon-17.png";
           startIcon.alt = "Pause";
-          startTimer();
         } else {
           startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
           startIcon.alt = "Start";
@@ -260,8 +263,14 @@
 
     function startTimer() {
       if (timerInterval) return;
+      
+      if (!startTime) {
+        startTime = Date.now() - (elapsedTime * 1000); // Account for existing elapsed time
+      }
+      
       timerInterval = setInterval(() => {
-        elapsedTime++;
+        const now = Date.now();
+        elapsedTime = Math.floor((now - startTime) / 1000);
         updateDisplay();
         saveState();
       }, 1000);
@@ -270,12 +279,14 @@
     function stopTimer() {
       clearInterval(timerInterval);
       timerInterval = null;
+      startTime = null;
       saveState();
     }
 
     function resetTimer() {
       stopTimer();
       elapsedTime = 0;
+      startTime = null;
       updateDisplay();
       isRunning = false;
       startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
@@ -294,6 +305,7 @@
         startIcon.alt = "Pause";
       }
       isRunning = !isRunning;
+      saveState();
     }
 
     function saveCurrentTime() {
@@ -393,6 +405,14 @@
     startPauseButton.addEventListener("click", toggleStartPause);
     resetButton.addEventListener("click", resetTimer);
     saveButton.addEventListener("click", saveCurrentTime);
+
+    // Add visibility change handling
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && isRunning) {
+        // Reload the state to sync the timer
+        loadState();
+      }
+    });
 
     window.addEventListener("load", loadState);
 
