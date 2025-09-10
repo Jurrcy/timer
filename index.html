@@ -65,7 +65,7 @@
       height: 24px;
       cursor: pointer;
       margin: 0;
-      transition: transform 0.2s ease;
+  transition: transform 0.2s ease, filter 0.3s ease;
     }
 
     .theme-switch img:hover {
@@ -111,6 +111,15 @@
     }
 
     body:not(.light-mode) .button img {
+      filter: invert(1);
+    }
+
+    /* Theme switch icon color handling */
+    body.light-mode .theme-switch img {
+      filter: invert(0);
+    }
+
+    body:not(.light-mode) .theme-switch img {
       filter: invert(1);
     }
 
@@ -175,20 +184,20 @@
 <body>
   <div class="container">
     <div class="theme-switch">
-      <img src="https://icons-for-free.com/iff/png/512/sun-131979013495145260.png" id="light-icon" alt="Light Mode" title="Switch to Light Mode" />
-      <img src="https://static-00.iconduck.com/assets.00/moon-icon-512x512-fm9crgpt.png" id="dark-icon" alt="Dark Mode" title="Switch to Dark Mode" style="display: none;" />
+      <img src="icons/theme.png" id="light-icon" alt="Theme" title="Switch theme" />
+      <img src="icons/theme.png" id="dark-icon" alt="Theme" title="Switch theme" style="display: none;" />
     </div>
     <div class="title">Time Tracker</div>
     <div class="time-display" id="time-display">00:00:00</div>
     <div class="button-group">
       <button class="button" id="start-pause-button">
-        <img src="https://brandeps.com/icon-download/P/Play-icon-24.png" id="start-icon" alt="Start">
+        <img src="icons/play.png" id="start-icon" alt="Start">
       </button>
       <button class="button" id="reset-button">
-        <img src="https://brandeps.com/icon-download/R/Reset-icon-01.png" alt="Reset">
+        <img src="icons/reset.png" alt="Reset">
       </button>
       <button class="button" id="save-button">
-        <img src="https://brandeps.com/icon-download/S/Save-icon-05.png" alt="Save">
+        <img src="icons/save.png" alt="Save">
       </button>
     </div>
     <div class="saved-times hidden">
@@ -248,10 +257,10 @@
           const timeSinceStart = Math.floor((now - startTime) / 1000);
           elapsedTime = timeSinceStart;
           startTimer();
-          startIcon.src = "https://brandeps.com/icon-download/P/Pause-icon-17.png";
+          startIcon.src = "icons/pause.png";
           startIcon.alt = "Pause";
         } else {
-          startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
+          startIcon.src = "icons/play.png";
           startIcon.alt = "Start";
         }
 
@@ -289,7 +298,7 @@
       startTime = null;
       updateDisplay();
       isRunning = false;
-      startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
+  startIcon.src = "icons/play.png";
       startIcon.alt = "Start";
       saveState();
     }
@@ -297,11 +306,11 @@
     function toggleStartPause() {
       if (isRunning) {
         stopTimer();
-        startIcon.src = "https://brandeps.com/icon-download/P/Play-icon-24.png";
+  startIcon.src = "icons/play.png";
         startIcon.alt = "Start";
       } else {
         startTimer();
-        startIcon.src = "https://brandeps.com/icon-download/P/Pause-icon-17.png";
+  startIcon.src = "icons/pause.png";
         startIcon.alt = "Pause";
       }
       isRunning = !isRunning;
@@ -370,8 +379,9 @@
         timeCell.appendChild(timeInput);
 
         const deleteCell = document.createElement("td");
-        const deleteIcon = document.createElement("img");
-        deleteIcon.src = "https://www.pngplay.com/wp-content/uploads/7/Delete-Transparent-Background.png";
+  const deleteIcon = document.createElement("img");
+  // Using reset.png as a placeholder for delete due to missing delete icon in icons/
+  deleteIcon.src = "icons/reset.png";
         deleteIcon.alt = "Delete";
         deleteIcon.className = "delete-icon";
         deleteIcon.addEventListener("click", () => {
